@@ -1,0 +1,13 @@
+rule_name,dimension,severity,rows_checked,rows_failed,pass_rate,status
+required_columns_not_null,Completeness,error,524877,0,100.0,PASS
+quantity_positive,Validity,error,524877,0,100.0,PASS
+unit_price_positive,Validity,error,524877,0,100.0,PASS
+invoice_no_six_digits,Validity,error,524877,0,100.0,PASS
+no_duplicate_rows,Uniqueness,error,524877,0,100.0,PASS
+line_total_consistent,Consistency,error,524877,0,100.0,PASS
+invoice_date_in_range,Plausibility,error,524877,0,100.0,PASS
+country_not_empty,Completeness,error,524877,0,100.0,PASS
+quantity_at_most_10000,Plausibility,warning,524877,2,100.0,WARN
+unit_price_at_most_1000,Plausibility,warning,524877,53,99.99,WARN
+stock_code_looks_like_product,Validity,warning,524877,2373,99.55,WARN
+customer_id_present,Completeness,warning,524877,132185,74.82,WARN

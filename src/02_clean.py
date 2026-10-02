@@ -56,6 +56,9 @@ def split_rejected(df):
     missing_desc = df["Description"].isna() | (df["Description"] == "")
     reason[missing_desc] = "missing_description"
 
+    bad_invoice = ~df["InvoiceNo"].str.match(r"^\d{6}$", na=False) & reason.isna()
+    reason[bad_invoice] = "invalid_invoice_format"
+    
     bad_price = (df["UnitPrice"] <= 0) & reason.isna()
     reason[bad_price] = "price_zero_or_negative"
 
