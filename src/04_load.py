@@ -7,8 +7,9 @@ CANCEL_PATH = "data/clean/cancellations.csv"
 DB_PATH = "data/retail.db"
 SCHEMA_PATH = "sql/schema.sql"
 
-# DECISION: codes that are not 5 digits + optional letters are flagged is_product = 0
-PRODUCT_RE = r"^\d{5}[A-Za-z]{0,2}$"
+# DECISION: codes that are fees, postage, samples, manual entries or vouchers, not products.
+# Compared in upper case, so "M" and "m" are both caught; "GIFT_" vouchers are matched by prefix.
+NON_PRODUCT_CODES = {"AMAZONFEE", "BANK CHARGES", "C2", "DOT", "M", "POST", "S"}
 
 
 def read_csv(path):
@@ -39,6 +40,7 @@ def check_invoice_consistency(df):
     if gaps.max() > pd.Timedelta(hours=1):
         raise ValueError("Invoice date gap is larger than expected.")
 
+
 # ---------- BUILD TABLES IN PANDAS ----------
 def build_customers(df):
     ids = df["CustomerID"].dropna().astype("int64").drop_duplicates()
@@ -50,7 +52,10 @@ def build_products(df):
     desc = df.groupby("StockCode")["Description"].agg(lambda s: s.mode().iloc[0])
     products = desc.reset_index()
     products.columns = ["stock_code", "description"]
-    products["is_product"] = products["stock_code"].str.match(PRODUCT_RE).astype(int)
+
+    codes = products["stock_code"].str.upper()
+    is_non_product = codes.isin(NON_PRODUCT_CODES) | codes.str.startswith("GIFT_")
+    products["is_product"] = (~is_non_product).astype(int)
     return products
 
 
@@ -126,6 +131,11 @@ def verify(conn, clean, cancellations, customers, products, invoices):
     fk_problems = conn.execute("PRAGMA foreign_key_check").fetchall()
     print("Foreign key violations:", len(fk_problems))
     all_ok &= len(fk_problems) == 0
+
+    split = conn.execute(
+        "SELECT is_product, COUNT(*) FROM products GROUP BY is_product ORDER BY is_product"
+    ).fetchall()
+    print("products by is_product (0 = non-product, 1 = product):", split)
 
     if not all_ok:
         raise SystemExit("VERIFICATION FAILED")
